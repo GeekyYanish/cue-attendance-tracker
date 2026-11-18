@@ -27,7 +27,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 .brand { display: flex; position: relative; justify-content: space-between; align-items: center; gap: 12px; min-height: 68px; }
 .brand-name { display: flex; align-items: center; gap: 12px; font-weight: 760; letter-spacing: -.025em; }
 .feedback-prompt {
-  position: absolute; z-index: 3; right: 0; top: calc(100% + 8px);
+  position: absolute; z-index: 3; left: 0; top: calc(100% + 8px);
   display: flex; align-items: center; gap: 4px; padding: 4px;
   border: 1px solid var(--line); border-radius: 12px; background: var(--paper);
   box-shadow: 0 8px 20px #182e2924;
@@ -188,7 +188,7 @@ footer { color: var(--muted); font-size: 13px; padding: 26px 0 34px; }
 @media (min-width: 1400px) and (min-height: 380px) {
   .portfolio-envelope { position: fixed; right: 22px; bottom: 88px; margin: 0; }
 }
-.notice { background: var(--ink); color: white; position: fixed; bottom: 18px; right: 18px; padding: 10px 16px; border-radius: 8px; max-width: calc(100% - 36px); }
+.notice { background: var(--ink); color: white; position: fixed; bottom: 18px; left: 18px; padding: 10px 16px; border-radius: 8px; max-width: calc(100% - 36px); }
 dialog { border: 1px solid var(--line); border-radius: 16px; padding: 22px; color: var(--ink); background: var(--paper); width: min(480px, calc(100% - 30px)); max-height: calc(100dvh - 36px); }
 dialog::backdrop { background: #142e2699; }
 .dialog-heading { align-items: center; margin-bottom: 15px; }
@@ -261,7 +261,7 @@ button:disabled { opacity: .65; cursor: wait; }
   .card-actions button { min-width: 0; padding-inline: 6px; }
   .card-actions .edit { margin-left: 0; min-width: 44px; }
   footer { padding-bottom: max(26px, env(safe-area-inset-bottom)); }
-  .notice { bottom: max(12px, env(safe-area-inset-bottom)); }
+  .notice { bottom: max(12px, env(safe-area-inset-bottom)); left: max(18px, env(safe-area-inset-left)); }
   dialog { padding: 16px; max-height: calc(100dvh - 24px); }
   #dialog-form, #feedback-form {
     display: grid;
