@@ -73,8 +73,6 @@ function ruler(value, goal) {
   track.append(fill);
   if (goal != null) {
     track.classList.add("has-goal");
-    if (goal < 7500) track.classList.add("goal-red");
-    else if (goal < 8500) track.classList.add("goal-yellow");
     track.style.setProperty("--goal", `${goal / 100}%`);
     track.append(el("span", "marker"), el("span", "marker-label", percentText(goal / 100)));
   }
