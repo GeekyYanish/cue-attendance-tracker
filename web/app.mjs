@@ -70,9 +70,9 @@ function ruler(value, goal, below) {
   fill.style.width = `${value ?? 0}%`;
   track.append(fill);
   if (goal != null) {
-    const marker = el("span", "marker");
-    marker.style.left = `${goal / 100}%`;
-    track.append(marker);
+    track.classList.add("has-goal");
+    track.style.setProperty("--goal", `${goal / 100}%`);
+    track.append(el("span", "marker"), el("span", "marker-label", percentText(goal / 100)));
   }
   return track;
 }
@@ -120,7 +120,9 @@ function subjectCard(subject, overall) {
   const actions = el("div", "card-actions");
   actions.append(button("＋ Attended", "attended", "log", subject.id),
     button("＋ Missed", "missed", "log", subject.id), button("Edit", "edit", "edit", subject.id));
-  card.append(heading, ruler(value, subject.target, Boolean(recovery)), counts, projection, actions);
+  const logged = el("p", "class-feedback");
+  logged.setAttribute("role", "status");
+  card.append(heading, ruler(value, subject.target, Boolean(recovery)), counts, projection, actions, logged);
   return card;
 }
 
@@ -173,16 +175,18 @@ function showError(message = "") {
   $("#dialog-error").hidden = !message;
 }
 
-function open(title, fields, accept, onSubmit) {
+function open(title, fields, accept, onSubmit, { destructive = false } = {}) {
   $("#dialog-title").textContent = title;
   editor.setAttribute("aria-labelledby", "dialog-title");
   $("#dialog-fields").replaceChildren(...fields);
   $("#dialog-submit").textContent = accept;
   $("#dialog-submit").disabled = false;
+  $("#dialog-submit").classList.toggle("danger", destructive);
   showError();
   submit = onSubmit;
   if (!editor.open) editor.showModal();
-  ($("#dialog-fields").querySelector("input, textarea, button") ?? $("#dialog-submit")).focus();
+  const firstControl = $("#dialog-fields").querySelector("input, textarea, button");
+  (destructive ? $("#dialog-actions [data-action='close']") : firstControl ?? $("#dialog-submit")).focus();
 }
 
 function readInteger(value) {
@@ -364,6 +368,22 @@ document.addEventListener("click", (event) => {
         return "Semester created.";
       });
   }
+  if (action === "delete-term") {
+    const current = term();
+    open("Delete semester", [
+      el("p", "muted", `Delete “${current.name}” and all of its subjects, attendance, and targets? This action is permanent.`),
+    ], "Delete semester", () => {
+      update((next) => {
+        const index = next.terms.findIndex((item) => item.id === current.id);
+        next.terms.splice(index, 1);
+        if (!next.terms.length) {
+          next.terms.push({ id: crypto.randomUUID(), name: "Current semester", target: null, subjects: [] });
+        }
+        next.active = next.terms[Math.min(index, next.terms.length - 1)].id;
+      });
+      return "Semester deleted.";
+    }, { destructive: true });
+  }
   if (action === "remove" && subject) {
     open("Remove subject", [el("p", "muted", `Remove ${subject.name} and its attendance from this semester?`)], "Remove subject", () => {
       update((next) => { term(next).subjects = term(next).subjects.filter((item) => item.id !== id); });
@@ -378,9 +398,19 @@ document.addEventListener("click", (event) => {
         row.total += row.length;
         if (action === "attended") row.attended += row.length;
       });
-      notify(`${subject.name} · ${qty(subject.length, "hour")} marked ${action}.`);
-      [...$("#subjects").querySelectorAll("button")].find((item) => item.dataset.id === id &&
-        item.dataset.action === action)?.focus();
+      const logButton = [...$("#subjects").querySelectorAll("button")].find((item) =>
+        item.dataset.id === id && item.dataset.action === action);
+      logButton?.focus({ preventScroll: true });
+      const card = logButton?.closest(".subject");
+      if (card) {
+        const logged = card.querySelector(".class-feedback");
+        logged.textContent = `${qty(subject.length, "hour")} marked ${action}.`;
+        card.classList.add("class-updated");
+        setTimeout(() => {
+          card.classList.remove("class-updated");
+          logged.textContent = "";
+        }, 2500);
+      }
     } catch (error) {
       notify(error.message);
     }
@@ -389,3 +419,87 @@ document.addEventListener("click", (event) => {
 
 render();
 if (!storageAvailable) notify("Saved attendance couldn’t be read in this browser.");
+
+const feedbackDialog = $("#feedback-dialog");
+const feedbackForm = $("#feedback-form");
+const feedbackPrompt = $("#feedback-prompt");
+const feedbackStatus = $("#feedback-status");
+const feedbackSend = $("#feedback-send");
+const feedbackPromptKey = "cue-feedback-invitation-dismissed";
+const feedbackHost = "https://cue-attendance-tracker.netlify.app";
+const feedbackHosts = new Set([new URL(feedbackHost).hostname, "cue-attendance.yanish.me"]);
+
+try {
+  feedbackPrompt.hidden = sessionStorage.getItem(feedbackPromptKey) === "yes";
+} catch {
+  feedbackPrompt.hidden = false;
+}
+
+function dismissFeedbackPrompt() {
+  feedbackPrompt.hidden = true;
+  try { sessionStorage.setItem(feedbackPromptKey, "yes"); } catch { /* Dismissed for this page. */ }
+}
+
+function openFeedback() {
+  dismissFeedbackPrompt();
+  feedbackDialog.showModal();
+}
+
+function feedbackMessage(message, error = false) {
+  feedbackStatus.hidden = false;
+  feedbackStatus.textContent = message;
+  feedbackStatus.classList.toggle("error", error);
+}
+
+$("#feedback-button").addEventListener("click", openFeedback);
+$("#feedback-invitation").addEventListener("click", openFeedback);
+$("#feedback-dismiss").addEventListener("click", () => {
+  dismissFeedbackPrompt();
+  $("#feedback-button").focus();
+});
+$("#feedback-close").addEventListener("click", () => feedbackDialog.close());
+feedbackDialog.addEventListener("close", () => $("#feedback-button").focus());
+
+feedbackForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (feedbackSend.disabled) return;
+  const formData = new FormData(feedbackForm);
+  // Netlify inserts this field at deploy time. Setting it also covers static previews.
+  formData.set("form-name", "tracker-feedback");
+  const message = formData.get("message").trim();
+  const image = formData.get("image");
+  const attachment = formData.get("attachment");
+  if (!message && !image.size && !attachment.size) {
+    feedbackMessage("Write a message or choose a file to send.", true);
+    return;
+  }
+  if (image.size + attachment.size > 7000000) {
+    feedbackMessage("Choose files that total 7 MB or less.", true);
+    return;
+  }
+  if (image.size && !image.type.startsWith("image/")) {
+    feedbackMessage("Choose an image for the Image field, or use Other file.", true);
+    return;
+  }
+  if (!feedbackHosts.has(location.hostname)) {
+    feedbackMessage("Feedback is available on the live tracker.");
+    const link = el("a", "", "Open live tracker");
+    link.href = feedbackHost;
+    feedbackStatus.append(" ", link);
+    return;
+  }
+  feedbackSend.disabled = true;
+  feedbackMessage("Sending feedback…");
+  try {
+    const response = await fetch("/", {
+      method: "POST", body: formData, signal: AbortSignal.timeout(35000),
+    });
+    if (!response.ok) throw new Error("Feedback submission failed.");
+    feedbackForm.reset();
+    feedbackMessage("Feedback sent. Thanks!");
+  } catch {
+    feedbackMessage("Feedback couldn’t be sent. Your message is still here. Try again.", true);
+  } finally {
+    feedbackSend.disabled = false;
+  }
+});

@@ -10,14 +10,28 @@
 </head>
 <body>
 <header class="bar">
-  <div class="wrap brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> CUE Attendance</div>
+  <div class="wrap brand">
+    <span class="brand-name"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> CUE Attendance</span>
+    <button type="button" id="feedback-button" class="secondary">Feedback</button>
+    <aside id="feedback-prompt" class="feedback-prompt" aria-label="Feedback invitation" hidden>
+      <button type="button" id="feedback-invitation" class="feedback-invitation">Open for feedback <span aria-hidden="true">↗</span></button>
+      <button type="button" class="feedback-dismiss" id="feedback-dismiss" aria-label="Dismiss feedback invitation">×</button>
+    </aside>
+  </div>
 </header>
 <main class="wrap">
   <div class="page-heading">
     <div><h1>Attendance tracker</h1><p>Track your hours and see how many classes you can miss.</p></div>
     <button class="secondary" data-action="import">Import from CUE</button>
   </div>
-  <div class="term-controls"><label for="term">Semester</label><select id="term"></select><button class="secondary" data-action="term">＋ New semester</button></div>
+  <div class="term-controls">
+    <label for="term">Semester</label>
+    <select id="term"></select>
+    <div class="term-actions">
+      <button class="secondary" data-action="term">＋ New semester</button>
+      <button class="secondary danger-outline" data-action="delete-term">Delete semester</button>
+    </div>
+  </div>
   <section class="overview" aria-label="Overall attendance">
     <div class="overview-heading">
       <div><h2>Overall attendance</h2><div id="overall-percent" class="hero-value">—</div></div>
@@ -50,6 +64,24 @@
       <button type="button" class="secondary" data-action="close">Cancel</button>
       <button type="submit" class="primary" id="dialog-submit">Save</button>
     </div>
+  </form>
+</dialog>
+<dialog id="feedback-dialog" aria-labelledby="feedback-title">
+  <form id="feedback-form" name="tracker-feedback" method="POST" enctype="multipart/form-data" data-netlify="true" netlify-honeypot="bot-field">
+    <input type="hidden" name="form-name" value="tracker-feedback">
+    <p hidden><label>Leave blank <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+    <div class="dialog-heading">
+      <h2 id="feedback-title">Send feedback</h2>
+      <button type="button" class="icon" id="feedback-close" aria-label="Close feedback">×</button>
+    </div>
+    <div id="feedback-fields">
+      <label class="field">Message <textarea name="message" maxlength="5000" rows="4"></textarea></label>
+      <label class="field">Image (optional) <input name="image" type="file" accept="image/*"></label>
+      <label class="field">Other file (optional) <input name="attachment" type="file"></label>
+      <p class="muted">Up to 7 MB combined. Leave out CUE reports or other personal information.</p>
+    </div>
+    <p id="feedback-status" class="feedback-status" role="status" hidden></p>
+    <div class="dialog-actions"><button type="submit" class="primary" id="feedback-send">Send feedback</button></div>
   </form>
 </dialog>
 </body>
