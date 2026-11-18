@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CUE Attendance Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.mjs"></script>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>CUE Attendance</h1>
+      <p id="refreshed">No attendance imported</p>
+    </div>
+    <button type="button" id="refresh" class="primary" disabled>Refresh from CUE</button>
+  </header>
+  <main>
+    <p id="status" role="status" hidden></p>
+    <section id="empty" class="card empty">
+      <h2>Import your attendance</h2>
+      <p>Sign in to CUE, choose your semester and open Course Overview. Then click <strong>Refresh from CUE</strong> from that tab.</p>
+      <a href="https://cue.christuniversity.in/main/attendence" target="_blank" rel="noopener noreferrer">Open CUE attendance ↗</a>
+    </section>
+    <section id="dashboard" hidden>
+      <label class="term">Semester <select id="term"></select></label>
+      <div id="overall"></div>
+      <div class="section-title">
+        <h2>Subjects</h2>
+        <p>Each bunk allowance uses both targets and assumes every missed class is in that subject.</p>
+      </div>
+      <div id="subjects"></div>
+    </section>
+  </main>
+</body>
+</html>
