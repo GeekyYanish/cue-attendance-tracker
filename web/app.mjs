@@ -63,9 +63,11 @@ function qty(value, unit) {
   return `${value.toLocaleString()} ${unit}${value === 1 ? "" : unit === "class" ? "es" : "s"}`;
 }
 
-function ruler(value, goal, below) {
-  const track = el("div", below ? "ruler below" : "ruler");
+function ruler(value, goal) {
+  const track = el("div", "ruler");
   track.setAttribute("aria-hidden", "true");
+  if (value != null && value < 75) track.classList.add("fill-red");
+  else if (value != null && value < 85) track.classList.add("fill-yellow");
   const fill = el("div", "fill");
   fill.style.width = `${value ?? 0}%`;
   track.append(fill);
@@ -124,7 +126,7 @@ function subjectCard(subject, overall) {
     button("＋ Missed", "missed", "log", subject.id), button("Edit", "edit", "edit", subject.id));
   const logged = el("p", "class-feedback");
   logged.setAttribute("role", "status");
-  card.append(heading, ruler(value, subject.target, Boolean(recovery)), counts, projection, actions, logged);
+  card.append(heading, ruler(value, subject.target), counts, projection, actions, logged);
   return card;
 }
 
@@ -144,7 +146,7 @@ function render() {
   $("#overall-target").textContent = active.target == null
     ? "Set overall target"
     : `${percentText(active.target / 100)} target · Edit`;
-  $("#overall-ruler").replaceChildren(ruler(value, active.target, Boolean(recovery)));
+  $("#overall-ruler").replaceChildren(ruler(value, active.target));
   $("#overall-counts").textContent = counts.total
     ? `${counts.attended} of ${counts.total} hours attended`
     : "0 hours recorded";
@@ -425,7 +427,21 @@ if (!storageAvailable) notify("Saved attendance couldn’t be read in this brows
 
 const portfolioEnvelope = $("#portfolio-envelope");
 const portfolioSummary = portfolioEnvelope.querySelector("summary");
+const portfolioFooter = portfolioEnvelope.parentElement;
+const mobileHeader = matchMedia("(max-width: 660px)");
 let portfolioPreview = false;
+
+function placePortfolioEnvelope() {
+  if (mobileHeader.matches) {
+    $("#feedback-button").after(portfolioEnvelope);
+  } else {
+    portfolioFooter.append(portfolioEnvelope);
+  }
+  portfolioFooter.hidden = mobileHeader.matches;
+}
+
+placePortfolioEnvelope();
+mobileHeader.addEventListener("change", placePortfolioEnvelope);
 
 portfolioEnvelope.addEventListener("pointerenter", (event) => {
   if (event.pointerType !== "mouse" || portfolioEnvelope.open) return;
