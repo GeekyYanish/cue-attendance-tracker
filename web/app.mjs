@@ -420,6 +420,37 @@ document.addEventListener("click", (event) => {
 render();
 if (!storageAvailable) notify("Saved attendance couldn’t be read in this browser.");
 
+const portfolioEnvelope = $("#portfolio-envelope");
+const portfolioSummary = portfolioEnvelope.querySelector("summary");
+let portfolioPreview = false;
+
+portfolioEnvelope.addEventListener("pointerenter", (event) => {
+  if (event.pointerType !== "mouse" || portfolioEnvelope.open) return;
+  portfolioPreview = true;
+  portfolioEnvelope.open = true;
+});
+
+function closePortfolioPreview() {
+  if (!portfolioPreview || portfolioEnvelope.matches(":hover, :focus-within")) return;
+  portfolioPreview = false;
+  portfolioEnvelope.open = false;
+}
+
+portfolioEnvelope.addEventListener("pointerleave", closePortfolioPreview);
+portfolioEnvelope.addEventListener("focusout", () => queueMicrotask(closePortfolioPreview));
+portfolioSummary.addEventListener("click", (event) => {
+  if (!portfolioPreview) return;
+  event.preventDefault();
+  portfolioPreview = false;
+});
+portfolioEnvelope.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !portfolioEnvelope.open) return;
+  event.preventDefault();
+  portfolioPreview = false;
+  portfolioEnvelope.open = false;
+  portfolioSummary.focus();
+});
+
 const feedbackDialog = $("#feedback-dialog");
 const feedbackForm = $("#feedback-form");
 const feedbackPrompt = $("#feedback-prompt");
