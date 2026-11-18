@@ -5,11 +5,11 @@ Track your CUE attendance in a browser. The web app uses no extension, backend, 
 ## Use the app
 
 1. Select a semester or create a new one.
-2. In CUE, open **Attendance → Course Overview** in grid view. Copy the subject cards, paste them into **Import from CUE**, and review the counts before saving. You can also add subjects manually or paste one line per subject as `Subject name, attended hours, total hours`.
+2. In CUE, open **Attendance → Course Overview** and select **Download Report**. In the tracker, open **Import from CUE**, choose the PDF, and click **Review import**. Check the semester and hours, then click **Save import**. You can also download the converted CSV or paste attendance text.
 3. Set an overall target. Use **Edit** on each subject to set its target and the number of hours per class.
 4. Record a class with **Attended** or **Missed**. Each subject’s bunk allowance respects both targets and assumes all missed classes are in that subject.
 
-Attendance is saved in the browser profile for the site’s address. Clearing that site’s browser data removes its records.
+PDFs are read locally with Mozilla PDF.js (see [license](PDFJS-LICENSE.txt)). Use the original CUE report with selectable text. Re-importing replaces matching subject hours and keeps their targets and class lengths. Attendance is saved in the browser profile for the site’s address. Clearing site data removes its records.
 
 ## Run locally
 
@@ -23,6 +23,6 @@ Open [http://127.0.0.1:8765/](http://127.0.0.1:8765/).
 
 ## Host it
 
-Upload the contents of this folder to an HTTPS static host, or set its publish directory to `web`. Keep `index.html`, `style.css`, and the three `.mjs` files together. Serve `.mjs` files with a JavaScript MIME type.
+Upload the contents of this folder to an HTTPS static host, or set its publish directory to `web`. Keep every file in this folder together, including the PDF.js worker. Serve `.mjs` files with a JavaScript MIME type.
 
 The [hosted version](https://cue-attendance-web.nativeturtle1.chatgpt.site) is private and requires the owner’s ChatGPT login.
