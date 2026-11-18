@@ -426,8 +426,8 @@ const feedbackPrompt = $("#feedback-prompt");
 const feedbackStatus = $("#feedback-status");
 const feedbackSend = $("#feedback-send");
 const feedbackPromptKey = "cue-feedback-invitation-dismissed";
-const feedbackHost = "https://cue-attendance-tracker.netlify.app";
-const feedbackHosts = new Set([new URL(feedbackHost).hostname, "cue-attendance.yanish.me"]);
+const feedbackHost = "https://attendance-tracker.yanish.me";
+const feedbackHosts = new Set([new URL(feedbackHost).hostname, "cue-attendance-tracker.netlify.app"]);
 
 try {
   feedbackPrompt.hidden = sessionStorage.getItem(feedbackPromptKey) === "yes";
