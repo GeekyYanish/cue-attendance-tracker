@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f7f2">
+<title>CUE Attendance</title>
+<link rel="stylesheet" href="./style.css">
+<script type="module" src="./app.mjs"></script>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> CUE Attendance</div>
+</header>
+<main class="wrap">
+  <div class="page-heading">
+    <div><h1>Attendance tracker</h1><p>Track your hours and see how many classes you can miss.</p></div>
+    <button class="secondary" data-action="import">Import from CUE</button>
+  </div>
+  <div class="term-controls"><label for="term">Semester</label><select id="term"></select><button class="secondary" data-action="term">＋ New semester</button></div>
+  <section class="overview" aria-label="Overall attendance">
+    <div class="overview-heading">
+      <div><h2>Overall attendance</h2><div id="overall-percent" class="hero-value">—</div></div>
+      <button id="overall-target" class="target" data-action="target">Set overall target</button>
+    </div>
+    <div id="overall-ruler"></div>
+    <div class="overview-foot"><p id="overall-counts">0 hours recorded</p><p id="overall-forecast">Add your subjects to start tracking.</p></div>
+  </section>
+  <section aria-labelledby="subjects-title">
+    <div class="section-heading">
+      <div><h2 id="subjects-title">Subjects <span id="subject-count">0</span></h2><p id="allowance-note" hidden>Each bunk allowance assumes all missed classes are in that subject.</p></div>
+      <button class="primary" data-action="add">＋ Add subject</button>
+    </div>
+    <div id="subjects" class="subject-grid"></div>
+    <div id="empty" class="empty">
+      <h3>No subjects yet</h3>
+      <p>Import your current attendance from CUE or add a subject and enter your hours.</p>
+      <button class="secondary" data-action="import">Import from CUE</button>
+    </div>
+  </section>
+  <footer>Your attendance stays in this browser.</footer>
+  <p id="status" role="status" class="notice" hidden></p>
+</main>
+<dialog id="editor">
+  <form id="dialog-form">
+    <div class="dialog-heading"><h2 id="dialog-title"></h2><button type="button" class="icon" data-action="close" aria-label="Close dialog">×</button></div>
+    <div id="dialog-fields"></div>
+    <p id="dialog-error" role="alert" class="error" hidden></p>
+    <div class="dialog-actions" id="dialog-actions">
+      <button type="button" class="secondary" data-action="close">Cancel</button>
+      <button type="submit" class="primary" id="dialog-submit">Save</button>
+    </div>
+  </form>
+</dialog>
+</body>
+</html>
