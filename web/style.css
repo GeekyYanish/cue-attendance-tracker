@@ -95,6 +95,12 @@ textarea { resize: vertical; min-height: 130px; }
 .error { color: #9f2e22; font-size: 14px; margin-top: 12px; }
 .remove { justify-self: start; background: transparent; color: #9f2e22; padding-inline: 0; text-decoration: underline; }
 .import-list { margin: 0; padding-left: 22px; max-height: 40vh; overflow: auto; }
+.import-fallback > summary { color: var(--teal); cursor: pointer; font-size: 14px; font-weight: 680; padding-block: 8px; }
+.import-fallback > .field { margin-top: 7px; }
+.field input[type="file"] { font-weight: 500; }
+.csv-download { justify-self: start; }
+.report-name { overflow-wrap: anywhere; }
+button:disabled { opacity: .65; cursor: wait; }
 @media (max-width: 660px) {
   .wrap {
     width: auto;

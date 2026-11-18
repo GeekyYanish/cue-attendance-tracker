@@ -1,5 +1,6 @@
 import { bunkAllowance, forecast, parseClassLength, parseTarget } from "./calculations.mjs";
 import { parseCueText, sumHours } from "./import.mjs";
+import { attendanceCsv, matchName, readCueReport } from "./cue-report.mjs";
 
 const $ = (selector) => document.querySelector(selector);
 const editor = $("#editor");
@@ -177,6 +178,7 @@ function open(title, fields, accept, onSubmit) {
   editor.setAttribute("aria-labelledby", "dialog-title");
   $("#dialog-fields").replaceChildren(...fields);
   $("#dialog-submit").textContent = accept;
+  $("#dialog-submit").disabled = false;
   showError();
   submit = onSubmit;
   if (!editor.open) editor.showModal();
@@ -222,42 +224,101 @@ function subjectEditor(subject) {
   });
 }
 
-function importEditor() {
-  open("Import from CUE", [
-    el("p", "muted", "Open Course Overview in grid view. Copy the subject cards as text and paste them here. You can also enter one line per subject in the format Name, attended, total."),
-    field("Attendance text", "text", "", { multiline: true, required: true, placeholder: "Subject name, 18, 20" }),
-  ], "Review import", (data) => {
-    const rows = parseCueText(data.get("text"));
-    const totals = sumHours(rows);
-    const list = el("ul", "import-list");
-    for (const row of rows) list.append(el("li", "", `${row.name} · ${row.attended} / ${row.total} hours`));
-    open("Review import", [
-      el("p", "muted", `${term().name} · ${totals.attended} of ${totals.total} hours across the pasted subjects`),
-      list,
-      el("p", "muted", "For matching subjects, these counts replace your current hours and keep your targets and class lengths. Other subjects stay as they are."),
-    ], "Save import", () => {
-      update((next) => {
-        const { subjects } = term(next);
-        for (const row of rows) {
-          const existing = subjects.find((item) => item.name.toLowerCase() === row.name.toLowerCase());
-          if (existing) Object.assign(existing, row);
-          else subjects.push({ ...row, id: crypto.randomUUID(), length: 1, target: null });
-        }
-      });
-      return `Imported ${rows.length} ${rows.length === 1 ? "subject" : "subjects"}.`;
+function previewImport(rows, fileName) {
+  const active = term();
+  const totals = sumHours(rows);
+  const list = el("ul", "import-list");
+  for (const row of rows) {
+    const existing = active.subjects.find((item) => matchName(item.name) === matchName(row.name));
+    const before = existing ? `${existing.attended} / ${existing.total} → ` : "";
+    const annotation = existing ? "" : " · New subject";
+    list.append(el("li", "", `${row.name} · ${before}${row.attended} / ${row.total} hours${annotation}`));
+  }
+  const download = el("button", "secondary csv-download", "Download CSV");
+  download.type = "button";
+  download.addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([attendanceCsv(rows)], { type: "text/csv;charset=utf-8" }));
+    const link = el("a");
+    link.href = url;
+    link.download = "cue-attendance.csv";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  });
+
+  open("Review import", [
+    el("p", "muted", `Import into ${active.name} · ${totals.attended} of ${totals.total} hours`),
+    ...(fileName ? [el("p", "muted report-name", fileName)] : []),
+    list,
+    el("p", "muted", "Saving replaces the hours for matching subjects and keeps their targets and class lengths. Subjects absent from the file stay as they are."),
+    download,
+  ], "Save import", () => {
+    update((next) => {
+      const { subjects } = term(next);
+      for (const row of rows) {
+        const existing = subjects.find((item) => matchName(item.name) === matchName(row.name));
+        if (existing) Object.assign(existing, { attended: row.attended, total: row.total });
+        else subjects.push({ ...row, id: crypto.randomUUID(), length: 1, target: null });
+      }
     });
+    return `Imported ${rows.length} ${rows.length === 1 ? "subject" : "subjects"}.`;
   });
 }
 
-form.addEventListener("submit", (event) => {
+function importEditor() {
+  const fileField = field("Attendance report (PDF)", "report");
+  const fileInput = fileField.querySelector("input");
+  fileInput.type = "file";
+  fileInput.accept = ".pdf,application/pdf";
+  const fallback = el("details", "import-fallback");
+  fallback.append(
+    el("summary", "", "Paste attendance instead"),
+    field("Attendance text", "text", "", {
+      multiline: true, placeholder: "Paste CUE course cards or enter Subject name, 18, 20",
+    }),
+  );
+  open("Import from CUE", [
+    el("p", "muted", "In CUE, choose Attendance → Course Overview → Download Report. Select the PDF below to convert it to CSV in your browser."),
+    fileField,
+    fallback,
+  ], "Review import", async (data, stillCurrent) => {
+    const file = data.get("report");
+    const pasted = data.get("text").trim();
+    if (file.size && pasted) throw new Error("Choose a PDF or paste attendance text, then try again.");
+    if (!file.size && !pasted) throw new Error("Select a CUE PDF report or paste attendance text.");
+    if (file.size) {
+      const save = $("#dialog-submit");
+      save.textContent = "Reading PDF…";
+      try {
+        const rows = await readCueReport(file);
+        if (stillCurrent()) previewImport(rows, file.name);
+      } finally {
+        if (stillCurrent()) save.textContent = "Review import";
+      }
+    } else {
+      previewImport(parseCueText(pasted));
+    }
+  });
+}
+
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const action = submit;
+  const save = $("#dialog-submit");
+  if (save.disabled) return;
+  save.disabled = true;
+  showError();
+  const stillCurrent = () => editor.open && submit === action;
   try {
-    const message = submit(new FormData(form));
-    if (!message) return;
+    const message = await action(new FormData(form), stillCurrent);
+    if (!message || !stillCurrent()) return;
     editor.close();
     notify(message);
   } catch (error) {
-    showError(error.message);
+    if (stillCurrent()) showError(error.message);
+  } finally {
+    if (stillCurrent()) save.disabled = false;
   }
 });
 
