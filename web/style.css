@@ -96,11 +96,64 @@ textarea { resize: vertical; min-height: 130px; }
 .remove { justify-self: start; background: transparent; color: #9f2e22; padding-inline: 0; text-decoration: underline; }
 .import-list { margin: 0; padding-left: 22px; max-height: 40vh; overflow: auto; }
 @media (max-width: 660px) {
-  .wrap { width: calc(100% - 30px); }
-  .page-heading { margin-top: 28px; flex-wrap: wrap; }
-  .subject-grid { grid-template-columns: 1fr; }
-  .overview-foot { flex-wrap: wrap; gap: 5px; }
+  .wrap {
+    width: auto;
+    margin-left: max(14px, env(safe-area-inset-left));
+    margin-right: max(14px, env(safe-area-inset-right));
+  }
+  .brand { min-height: 56px; }
+  .page-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin: 25px 0 18px;
+  }
+  .page-heading > button { width: 100%; }
+  button, select, .field :is(input, textarea) { min-height: 44px; }
+  select, .field :is(input, textarea) { font-size: 16px; }
+  .term-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 8px;
+    align-items: end;
+  }
+  .term-controls label { grid-column: 1 / -1; }
+  .term-controls select { width: 100%; min-width: 0; text-overflow: ellipsis; }
+  .overview-heading { flex-wrap: wrap; gap: 9px 12px; }
+  .overview-heading .target { max-width: 100%; white-space: normal; }
+  .overview-foot { display: grid; gap: 4px; }
+  .section-heading { align-items: start; gap: 10px; margin-top: 26px; }
+  .section-heading > div { min-width: 0; }
+  .subject-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .subject { padding: 15px; }
+  .card-heading > div { min-width: 0; }
+  .card-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    gap: 6px;
+  }
+  .card-actions button { min-width: 0; padding-inline: 6px; }
+  .card-actions .edit { margin-left: 0; min-width: 44px; }
+  footer { padding-bottom: max(26px, env(safe-area-inset-bottom)); }
+  .notice { bottom: max(12px, env(safe-area-inset-bottom)); }
+  dialog { padding: 16px; max-height: calc(100dvh - 24px); }
+  #dialog-form {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    max-height: calc(100dvh - 58px);
+  }
+  #dialog-fields {
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 4px;
+    margin: -4px;
+    align-content: start;
+  }
+  #dialog-fields .import-list { max-height: none; overflow: visible; }
+  .dialog-actions { margin-top: 12px; }
+  .dialog-actions button { flex: 1; white-space: normal; }
 }
 @media (max-width: 350px) {
-  .overview-heading, .section-heading { flex-wrap: wrap; }
+  .section-heading { flex-wrap: wrap; }
+  .term-controls button { padding-inline: 9px; }
+  .card-actions .log { font-size: 13px; }
 }
