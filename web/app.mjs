@@ -1,6 +1,7 @@
 import { bunkAllowance, forecast, parseClassLength, parseTarget } from "./calculations.mjs";
 import { parseCueText, sumHours } from "./import.mjs";
 import { attendanceCsv, matchName, readCueReport } from "./cue-report.mjs";
+import { track } from "./analytics.mjs";
 
 const $ = (selector) => document.querySelector(selector);
 const editor = $("#editor");
@@ -226,6 +227,9 @@ function subjectEditor(subject) {
       if (subject) subjects[subjects.findIndex((item) => item.id === subject.id)] = row;
       else subjects.push(row);
     });
+    if (target != null && target !== subject?.target) {
+      track("attendance_target_saved", { scope: "subject" });
+    }
     return subject ? "Subject updated." : "Subject added.";
   });
 }
@@ -268,6 +272,7 @@ function previewImport(rows, fileName) {
         else subjects.push({ ...row, id: crypto.randomUUID(), length: 1, target: null });
       }
     });
+    track("attendance_imported", { method: fileName ? "pdf" : "paste" });
     return `Imported ${rows.length} ${rows.length === 1 ? "subject" : "subjects"}.`;
   });
 }
@@ -353,6 +358,7 @@ document.addEventListener("click", (event) => {
     })], "Save target", (data) => {
       const target = parseTarget(data.get("target"));
       update((next) => { term(next).target = target; });
+      if (target != null && target !== goal) track("attendance_target_saved", { scope: "overall" });
       return target == null ? "Overall target cleared." : "Overall target saved.";
     });
   }
@@ -400,6 +406,7 @@ document.addEventListener("click", (event) => {
         row.total += row.length;
         if (action === "attended") row.attended += row.length;
       });
+      track("class_logged");
       const logButton = [...$("#subjects").querySelectorAll("button")].find((item) =>
         item.dataset.id === id && item.dataset.action === action);
       logButton?.focus({ preventScroll: true });
@@ -543,6 +550,7 @@ feedbackForm.addEventListener("submit", async (event) => {
       method: "POST", body: formData, signal: AbortSignal.timeout(35000),
     });
     if (!response.ok) throw new Error("Feedback submission failed.");
+    track("feedback_submitted");
       feedbackForm.reset();
       feedbackStatus.hidden = true;
       feedbackStatus.textContent = "";

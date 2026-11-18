@@ -26,3 +26,11 @@ Open [http://127.0.0.1:8765/](http://127.0.0.1:8765/).
 Upload the contents of this folder to an HTTPS static host, or set its publish directory to `web`. Keep every file in this folder together, including the PDF.js worker. Serve `.mjs` files with a JavaScript MIME type.
 
 The [hosted version](https://cue-attendance-web.nativeturtle1.chatgpt.site) is private and requires the owner’s ChatGPT login.
+
+## PostHog analytics
+
+To enable analytics on the production tracker, set `publicToken` and `apiHost` in [analytics.mjs](analytics.mjs) to the public project token and API host from your [PostHog JavaScript setup](https://posthog.com/docs/libraries/js). For a different production site, also update `productionHost`. Leave either setting blank to disable analytics.
+
+After deploying, check **Activity** in PostHog for `$pageview`. Save a sample import, change a target, and log a class to verify `attendance_imported`, `attendance_target_saved`, and `class_logged`. Successful feedback submissions send `feedback_submitted`.
+
+Analytics runs on the configured production hostname. The tracker sends the import method and target scope as event details. Attendance records, target percentages, and report or feedback contents stay out of analytics. Session replay and automatic interaction capture are disabled.
