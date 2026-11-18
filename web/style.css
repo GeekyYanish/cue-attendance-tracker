@@ -268,3 +268,32 @@ button:disabled { opacity: .65; cursor: wait; }
   .term-controls button { padding-inline: 9px; }
   .card-actions .log { font-size: 13px; }
 }
+
+.feedback-thanks-content {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 12px;
+  text-align: center;
+}
+
+.feedback-thanks-check {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--mint);
+  color: var(--teal);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.feedback-thanks-content h2 {
+  font-size: 21px;
+}
+
+.feedback-thanks-content button {
+  min-width: 88px;
+  min-height: 44px;
+}

@@ -526,8 +526,11 @@ feedbackForm.addEventListener("submit", async (event) => {
       method: "POST", body: formData, signal: AbortSignal.timeout(35000),
     });
     if (!response.ok) throw new Error("Feedback submission failed.");
-    feedbackForm.reset();
-    feedbackMessage("Feedback sent. Thanks!");
+      feedbackForm.reset();
+      feedbackStatus.hidden = true;
+      feedbackStatus.textContent = "";
+      feedbackDialog.close();
+      $("#feedback-thanks").showModal();
   } catch {
     feedbackMessage("Feedback couldn’t be sent. Your message is still here. Try again.", true);
   } finally {
