@@ -1,7 +1,7 @@
 import { bunkAllowance, forecast, parseClassLength, parseTarget } from "./calculations.mjs";
 import { parseCueText, sumHours } from "./import.mjs";
 import { attendanceCsv, matchName, readCueReport } from "./cue-report.mjs";
-import { track } from "./analytics.mjs";
+import { log, track } from "./analytics.mjs";
 
 const $ = (selector) => document.querySelector(selector);
 const editor = $("#editor");
@@ -109,7 +109,10 @@ function subjectCard(subject, overall) {
   title.append(el("h3", "", subject.name), el("p", "muted", subject.target == null
     ? "Target unset"
     : `${percentText(subject.target / 100)} target · ${qty(subject.length, "hour")} per class`));
-  heading.append(title, el("strong", recovery ? "score warning" : "score", percentText(value)));
+  const headingActions = el("div", "card-heading-actions");
+  headingActions.append(button("Edit", "edit", "edit", subject.id),
+    el("strong", recovery ? "score warning" : "score", percentText(value)));
+  heading.append(title, headingActions);
   const counts = el("p", "muted", `${subject.attended} of ${subject.total} hours attended`);
   const allowance = bunkAllowance(result, overall, subject.length);
   const projection = el("div", "projection");
@@ -122,7 +125,7 @@ function subjectCard(subject, overall) {
   }
   const actions = el("div", "card-actions");
   actions.append(button("＋ Attended", "attended", "log", subject.id),
-    button("＋ Missed", "missed", "log", subject.id), button("Edit", "edit", "edit", subject.id));
+    button("＋ Missed", "missed", "log", subject.id));
   const logged = el("p", "class-feedback");
   logged.setAttribute("role", "status");
   card.append(heading, ruler(value, subject.target), counts, projection, actions, logged);
@@ -227,6 +230,7 @@ function subjectEditor(subject) {
       if (subject) subjects[subjects.findIndex((item) => item.id === subject.id)] = row;
       else subjects.push(row);
     });
+    track("subject_saved", { action: subject ? "updated" : "created" });
     if (target != null && target !== subject?.target) {
       track("attendance_target_saved", { scope: "subject" });
     }
@@ -254,6 +258,9 @@ function previewImport(rows, fileName) {
     document.body.append(link);
     link.click();
     link.remove();
+    const source = fileName ? "pdf" : "paste";
+    track("attendance_csv_downloaded", { source });
+    log("attendance_csv_downloaded", { source, subject_count: rows.length });
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   });
 
@@ -272,7 +279,9 @@ function previewImport(rows, fileName) {
         else subjects.push({ ...row, id: crypto.randomUUID(), length: 1, target: null });
       }
     });
-    track("attendance_imported", { method: fileName ? "pdf" : "paste" });
+    const method = fileName ? "pdf" : "paste";
+    track("attendance_imported", { method });
+    log("attendance_import_completed", { method, subject_count: rows.length });
     return `Imported ${rows.length} ${rows.length === 1 ? "subject" : "subjects"}.`;
   });
 }
@@ -373,6 +382,7 @@ document.addEventListener("click", (event) => {
           next.active = crypto.randomUUID();
           next.terms.push({ id: next.active, name, target: null, subjects: [] });
         });
+        track("semester_created");
         return "Semester created.";
       });
   }
@@ -389,12 +399,14 @@ document.addEventListener("click", (event) => {
         }
         next.active = next.terms[Math.min(index, next.terms.length - 1)].id;
       });
+      track("semester_deleted");
       return "Semester deleted.";
     }, { destructive: true });
   }
   if (action === "remove" && subject) {
     open("Remove subject", [el("p", "muted", `Remove ${subject.name} and its attendance from this semester?`)], "Remove subject", () => {
       update((next) => { term(next).subjects = term(next).subjects.filter((item) => item.id !== id); });
+      track("subject_removed");
       return "Subject removed.";
     });
   }
@@ -406,7 +418,7 @@ document.addEventListener("click", (event) => {
         row.total += row.length;
         if (action === "attended") row.attended += row.length;
       });
-      track("class_logged");
+      track("class_logged", { outcome: action });
       const logButton = [...$("#subjects").querySelectorAll("button")].find((item) =>
         item.dataset.id === id && item.dataset.action === action);
       logButton?.focus({ preventScroll: true });
@@ -551,11 +563,12 @@ feedbackForm.addEventListener("submit", async (event) => {
     });
     if (!response.ok) throw new Error("Feedback submission failed.");
     track("feedback_submitted");
-      feedbackForm.reset();
-      feedbackStatus.hidden = true;
-      feedbackStatus.textContent = "";
-      feedbackDialog.close();
-      $("#feedback-thanks").showModal();
+    log("feedback_submission_completed");
+    feedbackForm.reset();
+    feedbackStatus.hidden = true;
+    feedbackStatus.textContent = "";
+    feedbackDialog.close();
+    $("#feedback-thanks").showModal();
   } catch {
     feedbackMessage("Feedback couldn’t be sent. Your message is still here. Try again.", true);
   } finally {

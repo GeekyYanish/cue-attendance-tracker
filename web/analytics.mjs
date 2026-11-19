@@ -1,41 +1,37 @@
-const publicToken = "phc_v4RiwaE8MWmMYWLMGDMwZvhjNN3WSCjq7b6VjUDJjnLt";
-const apiHost = "https://us.i.posthog.com";
-const productionHost = "attendance-tracker.yanish.me";
+const publicToken = globalThis.POSTHOG_PROJECT_TOKEN;
+const apiHost = globalThis.POSTHOG_HOST;
+const missingVariable = !publicToken ? "POSTHOG_PROJECT_TOKEN" : !apiHost ? "POSTHOG_HOST" : null;
+const isDevelopment = ["localhost", "127.0.0.1", "::1"].includes(globalThis.location?.hostname);
 
-const events = new Set([
-  "$pageview",
-  "attendance_imported",
-  "attendance_target_saved",
-  "class_logged",
-  "feedback_submitted",
-]);
+if (missingVariable && isDevelopment) {
+  throw new Error(`${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`);
+}
 
-const analytics = publicToken && apiHost && globalThis.location?.hostname === productionHost
-  ? import("https://cdn.jsdelivr.net/npm/posthog-js@1.450.1/+esm")
+const analytics = missingVariable
+  ? Promise.resolve(null)
+  : import("https://cdn.jsdelivr.net/npm/posthog-js@1.450.1/+esm")
     .then(({ default: posthog }) => {
       posthog.init(publicToken, {
         api_host: apiHost,
-        persistence: "localStorage",
-        capture_pageview: true,
-        capture_pageleave: false,
-        autocapture: false,
-        disable_session_recording: true,
-        disable_surveys: true,
-        advanced_disable_flags: true,
-        person_profiles: "never",
-        save_campaign_params: false,
-        save_referrer: false,
-        before_send(event) {
-          if (!event || !events.has(event.event)) return null;
-          event.properties.$current_url = `https://${productionHost}/`;
-          return event;
+        capture_exceptions: {
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
+          capture_console_errors: false,
+        },
+        logs: {
+          serviceName: "cue-attendance-tracker-web",
+          environment: isDevelopment ? "development" : "production",
+          serviceVersion: "1.0.0",
         },
       });
       return posthog;
     })
-    .catch(() => null)
-  : Promise.resolve(null);
+    .catch(() => null);
 
 export function track(event, properties) {
   analytics.then((posthog) => posthog?.capture(event, properties)).catch(() => {});
+}
+
+export function log(message, attributes) {
+  analytics.then((posthog) => posthog?.logger.info(message, attributes)).catch(() => {});
 }
