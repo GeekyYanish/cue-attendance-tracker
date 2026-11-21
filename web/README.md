@@ -1,6 +1,6 @@
 # CUE Attendance Web
 
-Track your CUE attendance in a browser. The web app uses no extension, backend, or build step.
+A Next.js App Router application for tracking CUE attendance in a browser. React components provide the attendance dashboard and pending claims projection. Attendance and claims are stored locally in the browser.
 
 ## Use the app
 
@@ -9,28 +9,51 @@ Track your CUE attendance in a browser. The web app uses no extension, backend, 
 3. Set an overall target. Use **Edit** on each subject to set its target and the number of hours per class.
 4. Record a class with **Attended** or **Missed**. Each subject’s bunk allowance respects both targets and assumes all missed classes are in that subject.
 
-PDFs are read locally with Mozilla PDF.js (see [license](PDFJS-LICENSE.txt)). Use the original CUE report with selectable text. Re-importing replaces matching subject hours and keeps their targets and class lengths. Attendance is saved in the browser profile for the site’s address. Clearing site data removes its records.
+PDFs are read locally with Mozilla PDF.js (see [license](public/PDFJS-LICENSE.txt)). Use the original CUE report with selectable text. Re-importing replaces matching subject hours and keeps their targets and class lengths. Attendance is saved in the browser profile for the site’s address. Clearing site data removes its records.
+
+## Project co-curricular claims
+
+Open **Claims projection** and select the semester whose attendance is already saved. Choose **Add pending claims**, enter whole-hour claims for each subject, and save. Enter only hours still awaiting credit in CUE. The co-curricular values in CUE’s Absent Details CSV are already included in its attendance totals.
+
+The projection adds manually entered pending claim hours to attended hours while keeping total hours held the same. It shows projected percentages, remaining absences, recovery requirements, and bunk allowances using your saved targets and class lengths. These results assume all entered claims are approved.
+
+Claims are stored locally per semester. **Edit pending claims** updates the saved hours. Use 0 to remove hours for a subject, or **Clear claims** to remove the projection. Previously imported CSV claims are excluded from projections. Successfully importing fresh attendance clears saved claims to prevent already credited hours from being counted twice. Enter any claims still awaiting credit afterwards.
 
 ## Run locally
 
-From the repository root, run:
+Use Node.js 22 or newer. From the repository root, run:
 
 ```sh
-python3 -m http.server 8765 --bind 127.0.0.1 --directory web
+cd web
+npm ci
+npm run dev
 ```
 
-Open [http://127.0.0.1:8765/](http://127.0.0.1:8765/).
+Open [http://localhost:3000](http://localhost:3000). Attendance is stored separately for each browser origin. Records from the live domain remain available when the new app is deployed on that same domain.
 
-## Host it
+To check the production export locally:
 
-Upload the contents of this folder to an HTTPS static host, or set its publish directory to `web`. Keep every file in this folder together, including the PDF.js worker. Serve `.mjs` files with a JavaScript MIME type.
+```sh
+npm run build
+npm start
+```
 
-The [hosted version](https://cue-attendance-web.nativeturtle1.chatgpt.site) is private and requires the owner’s ChatGPT login.
+The build generates static files in `web/out`, including the `/` attendance page, `/claims/` projection page, PDF.js assets, and feedback form registration. The former `/#claims` link redirects to `/claims/` after loading.
+
+## Host on Netlify
+
+The repository's `netlify.toml` sets the base directory to `web`, the build command to `npm run build`, and the publish directory to `out`. Keep the existing domain to preserve users’ saved attendance. Netlify installs dependencies before building. For another static host, upload the contents of `web/out` and serve `.mjs` files as JavaScript.
+
+Feedback uses Netlify Forms. Enable form detection for the project and keep the existing email notification for `tracker-feedback`. The build includes `public/__forms.html` so Netlify can detect the message and attachment fields. Submissions post to `/__forms.html`. Text, image, and file feedback are available on the live Netlify domains. Local previews show a link to the live tracker.
 
 ## PostHog analytics
 
-To enable analytics on the production tracker, set `publicToken` and `apiHost` in [analytics.mjs](analytics.mjs) to the public project token and API host from your [PostHog JavaScript setup](https://posthog.com/docs/libraries/js). For a different production site, also update `productionHost`. Leave either setting blank to disable analytics.
+Copy `web/.env.example` to `web/.env.local` and set `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` and `NEXT_PUBLIC_POSTHOG_HOST`. On Netlify, configure the same public environment variables before building. Next.js embeds `NEXT_PUBLIC_` values into the browser bundle, so use the public project token. Rebuild after changing them. The old root `.env` file is superseded by `web/.env.local`.
 
-After deploying, check **Activity** in PostHog for `$pageview`. Save a sample import, change a target, and log a class to verify `attendance_imported`, `attendance_target_saved`, and `class_logged`. Successful feedback submissions send `feedback_submitted`.
+Analytics is optional. The tracker loads successfully when these variables are absent. PostHog is installed as an npm dependency. Pageviews are captured when navigating between Attendance and Claims projection. Existing attendance, class, semester, and feedback events are retained.
 
-Analytics runs on the configured production hostname. The tracker sends the import method and target scope as event details. Attendance records, target percentages, and report or feedback contents stay out of analytics. Session replay and automatic interaction capture are disabled.
+## Verify
+
+From `web`, run `npm test` and `npm run build`. From the repository root, the tests also run with `node --test tests/*.test.mjs`.
+
+The tests cover exact attendance calculations, import validation, pending claims, and compatibility with the original local-storage format, including failed writes. For browser verification, import a PDF, change targets, log attended and missed classes, switch semesters and views, enter pending claims, and reload. Check desktop and mobile layouts. Feedback delivery requires a Netlify deployment.

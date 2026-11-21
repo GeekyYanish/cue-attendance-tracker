@@ -11,11 +11,11 @@ export async function readCueReport(file) {
 
   let pdfjs;
   try {
-    pdfjs = await import("./pdfjs.min.mjs");
+    pdfjs = await import(/* webpackIgnore: true */ new URL("/pdfjs.min.mjs", location.origin).href);
   } catch {
     throw new Error("The PDF reader couldn’t load. Refresh the page and try again.");
   }
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL("./pdfjs.worker.min.mjs", import.meta.url).href;
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL("/pdfjs.worker.min.mjs", location.origin).href;
   const task = pdfjs.getDocument({ data, stopAtErrors: true, useWasm: false, enableXfa: false });
   let pages;
   try {

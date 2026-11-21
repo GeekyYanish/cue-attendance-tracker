@@ -1,6 +1,18 @@
 # CUE Attendance Tracker
 
-A local browser extension for the Christ University CUE attendance portal.
+Track Christ University CUE attendance using the Next.js web application or the local browser extension.
+
+## Web application
+
+```sh
+cd web
+npm ci
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). See [web setup and deployment](web/README.md) for attendance import, pending claims, Netlify Forms, and PostHog configuration. The repository includes Netlify build settings for the Next.js static export.
+
+Existing web attendance stays available on the same domain after migration.
 
 ## Install in Chrome or Brave
 

@@ -1,37 +1,42 @@
-const publicToken = globalThis.POSTHOG_PROJECT_TOKEN;
-const apiHost = globalThis.POSTHOG_HOST;
-const missingVariable = !publicToken ? "POSTHOG_PROJECT_TOKEN" : !apiHost ? "POSTHOG_HOST" : null;
-const isDevelopment = ["localhost", "127.0.0.1", "::1"].includes(globalThis.location?.hostname);
+const publicToken = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
+const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+const missingVariable = !publicToken ? "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN" : !apiHost ? "NEXT_PUBLIC_POSTHOG_HOST" : null;
+const isDevelopment = process.env.NODE_ENV === "development";
 
-if (missingVariable && isDevelopment) {
-  throw new Error(`${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`);
+let analytics;
+
+export function startAnalytics() {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  if (analytics) return analytics;
+  if (missingVariable) {
+    if (isDevelopment) console.warn(`PostHog is disabled because ${missingVariable} is missing.`);
+    analytics = Promise.resolve(null);
+    return analytics;
+  }
+  analytics = import("posthog-js").then(({ default: posthog }) => {
+    posthog.init(publicToken, {
+      api_host: apiHost,
+      capture_pageview: false,
+      capture_exceptions: {
+        capture_unhandled_errors: true,
+        capture_unhandled_rejections: true,
+        capture_console_errors: false,
+      },
+      logs: {
+        serviceName: "cue-attendance-tracker-web",
+        environment: isDevelopment ? "development" : "production",
+        serviceVersion: "1.0.0",
+      },
+    });
+    return posthog;
+  }).catch(() => null);
+  return analytics;
 }
 
-const analytics = missingVariable
-  ? Promise.resolve(null)
-  : import("https://cdn.jsdelivr.net/npm/posthog-js@1.450.1/+esm")
-    .then(({ default: posthog }) => {
-      posthog.init(publicToken, {
-        api_host: apiHost,
-        capture_exceptions: {
-          capture_unhandled_errors: true,
-          capture_unhandled_rejections: true,
-          capture_console_errors: false,
-        },
-        logs: {
-          serviceName: "cue-attendance-tracker-web",
-          environment: isDevelopment ? "development" : "production",
-          serviceVersion: "1.0.0",
-        },
-      });
-      return posthog;
-    })
-    .catch(() => null);
-
 export function track(event, properties) {
-  analytics.then((posthog) => posthog?.capture(event, properties)).catch(() => {});
+  startAnalytics().then((posthog) => posthog?.capture(event, properties)).catch(() => {});
 }
 
 export function log(message, attributes) {
-  analytics.then((posthog) => posthog?.logger.info(message, attributes)).catch(() => {});
+  startAnalytics().then((posthog) => posthog?.logger.info(message, attributes)).catch(() => {});
 }
